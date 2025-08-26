@@ -1,0 +1,103 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_EDGES 1000
+
+// Structure to represent an edge
+typedef struct {
+    int src, dest, weight;
+} Edge;
+
+// Structure to represent a graph
+typedef struct {
+    int V, E;
+    Edge edges[MAX_EDGES];
+} Graph;
+
+// Disjoint Set Union (Union-Find) structures and functions
+int parent[MAX_EDGES];
+int rank[MAX_EDGES];
+
+// Find the parent (root) of a node with path compression
+int findParent(int i) {
+    if (parent[i] != i)
+        parent[i] = findParent(parent[i]);
+    return parent[i];
+}
+
+// Union two sets by rank
+void unionSets(int x, int y) {
+    int xroot = findParent(x);
+    int yroot = findParent(y);
+
+    if (rank[xroot] < rank[yroot])
+        parent[xroot] = yroot;
+    else if (rank[yroot] < rank[xroot])
+        parent[yroot] = xroot;
+    else {
+        parent[yroot] = xroot;
+        rank[xroot]++;
+    }
+}
+
+// Comparison function for qsort to sort edges by weight
+int compareEdges(const void* a, const void* b) {
+    Edge* e1 = (Edge*)a;
+    Edge* e2 = (Edge*)b;
+    return e1->weight - e2->weight;
+}
+
+// Kruskal's MST algorithm
+void kruskalMST(Graph* graph) {
+    int V = graph->V;
+    Edge result[V]; // To store the MST edges
+    int e = 0;      // Index for result[]
+    int i = 0;      // Index for sorted edges
+
+    // Initialize disjoint sets
+    for (int v = 0; v < V; v++) {
+        parent[v] = v;
+        rank[v] = 0;
+    }
+
+    // Sort edges by increasing weight
+    qsort(graph->edges, graph->E, sizeof(Edge), compareEdges);
+
+    while (e < V - 1 && i < graph->E) {
+        Edge next_edge = graph->edges[i++];
+
+        int x = findParent(next_edge.src);
+        int y = findParent(next_edge.dest);
+
+        // If including this edge doesn't cause cycle, include it
+        if (x != y) {
+            result[e++] = next_edge;
+            unionSets(x, y);
+        }
+    }
+
+    // Print the MST
+    printf("Edges in the Minimum Spanning Tree:\n");
+    printf("Source\tDestination\tWeight\n");
+    for (i = 0; i < e; i++) {
+        printf("%d \t %d \t\t %d\n", result[i].src, result[i].dest, result[i].weight);
+    }
+}
+
+int main() {
+    Graph graph;
+    printf("Enter number of vertices: ");
+    scanf("%d", &graph.V);
+
+    printf("Enter number of edges: ");
+    scanf("%d", &graph.E);
+
+    printf("Enter each edge in format: source destination weight\n");
+    for (int i = 0; i < graph.E; i++) {
+        scanf("%d %d %d", &graph.edges[i].src, &graph.edges[i].dest, &graph.edges[i].weight);
+    }
+
+    kruskalMST(&graph);
+
+    return 0;
+}
