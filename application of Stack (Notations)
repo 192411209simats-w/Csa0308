@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+#define MAX 100
+
+// Stack for characters (operators)
+char opStack[MAX];
+int topChar = -1;
+
+// Stack for integers (evaluation)
+int valStack[MAX];
+int topInt = -1;
+
+// Stack operations for characters
+void pushChar(char ch) {
+    opStack[++topChar] = ch;
+}
+
+char popChar() {
+    return opStack[topChar--];
+}
+
+char peekChar() {
+    return opStack[topChar];
+}
+
+int isEmptyChar() {
+    return topChar == -1;
+}
+
+// Stack operations for integers
+void pushInt(int val) {
+    valStack[++topInt] = val;
+}
+
+int popInt() {
+    return valStack[topInt--];
+}
+
+// Utility functions
+int precedence(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    return 0;
+}
+
+// Function to convert infix to postfix
+void infixToPostfix(char* infix, char* postfix) {
+    int i, j = 0;
+    char ch;
+
+    for (i = 0; infix[i] != '\0'; i++) {
+        ch = infix[i];
+
+        if (isalnum(ch)) {
+            postfix[j++] = ch;
+        } else if (ch == '(') {
+            pushChar(ch);
+        } else if (ch == ')') {
+            while (!isEmptyChar() && peekChar() != '(') {
+                postfix[j++] = popChar();
+            }
+            if (!isEmptyChar()) popChar(); // Pop '('
+        } else { // operator
+            while (!isEmptyChar() && precedence(peekChar()) >= precedence(ch)) {
+                postfix[j++] = popChar();
+            }
+            pushChar(ch);
+        }
+    }
+
+    while (!isEmptyChar()) {
+        postfix[j++] = popChar();
+    }
+
+    postfix[j] = '\0';
+}
+
+// Function to evaluate postfix expression
+int evaluatePostfix(char* postfix) {
+    int i, val1, val2, result;
+    char ch;
+
+    for (i = 0; postfix[i] != '\0'; i++) {
+        ch = postfix[i];
+
+        if (isdigit(ch)) {
+            pushInt(ch - '0');
+        } else {
+            val2 = popInt();
+            val1 = popInt();
+
+            switch (ch) {
+                case '+': result = val1 + val2; break;
+                case '-': result = val1 - val2; break;
+                case '*': result = val1 * val2; break;
+                case '/': result = val1 / val2; break;
+                default:
+                    printf("Invalid operator: %c\n", ch);
+                    exit(1);
+            }
+
+            pushInt(result);
+        }
+    }
+
+    return popInt();
+}
+
+// Main function
+int main() {
+    char infix[MAX], postfix[MAX];
+
+    printf("Enter a valid infix expression (single digits, no spaces): ");
+    scanf("%s", infix);
+
+    infixToPostfix(infix, postfix);
+
+    printf("Postfix expression: %s\n", postfix);
+
+    // Only evaluate if it contains numbers
+    if (isdigit(postfix[0])) {
+        int result = evaluatePostfix(postfix);
+        printf("Evaluated result: %d\n", result);
+    }
+
+    return 0;
+}
